@@ -20,6 +20,7 @@ This study investigates the transcriptional and epigenetic trajectories of devel
     * `CITEseq_clustering.ipynb`: Dimensionality reduction, clustering, and annotation.
     * `Methylation_RnBeads.R`: Differential methylation analysis.
 * `Figures/`: Code to reproduce specific figure panels (e.g., Figure 2, Figure S5).
+* `Processed_Data/`: Completely processed mudata and RnBeadSets used in the article
 * `Envs/`: Contains the `environment.yml` and `sessionInfo.txt` files for reproducibility.
 
 ## Computational Requirements
