@@ -1,71 +1,241 @@
 # IL-15 Signaling During a Critical NK Cell Developmental Window Subverts Maturation and KIR Acquisition
 
-![R](https://img.shields.io/badge/R-4.4.0-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.12.7-yellow.svg)
-
 ## Overview
-This repository contains the code and analysis scripts for the study **"IL-15 Signaling During a Critical NK Cell Developmental Window Subverts Maturation and KIR Acquisition"** (Ruesch et al., 2026).
 
-This study investigates the transcriptional and epigenetic trajectories of developing human NK cells under distinct IL-15 cytokine signaling schedules. The repository includes:
-1.  **CITE-seq Analysis (Python):** 5' Capture single-cell analysis of transcript and protein expression from FACS-purified Innate Lymphoid Cells (ILCs).
-2.  **Methylation Analysis (R):** Processing and analysis of methylation array data from FACS-sorted NK subsets.
+This repository contains the code and analysis workflows used in:
+
+**Ruesch et al. (2026)**  
+*IL-15 Signaling During a Critical NK Cell Developmental Window Subverts Maturation and KIR Acquisition*
+
+This study investigates how the timing of IL-15 exposure influences human natural killer (NK) cell development, maturation, KIR acquisition, transcriptional programming, and epigenetic regulation.
+
+The repository contains analysis code for:
+
+- CITE-seq profiling of developing human NK cells
+- DNA methylation array analysis of NK cell developmental subsets
+- Bulk RNA-sequencing analysis
+- Single-cell RNA-sequencing analysis of hematopoietic stem cell transplantation (HSCT) samples
+
+---
+
+## Repository Structure
+
+```text
+Ruesch_et_al_2026/
+│
+├── 01_CITEseq_Analysis/
+│   └── Analysis scripts and notebooks for CITE-seq experiments
+│
+├── 02_Methylation/
+│   └── DNA methylation processing and downstream analyses
+│
+├── 03_BulkRNAseq/
+│   └── Bulk RNA-seq analysis scripts
+│
+├── 04_scRNAseq_HSCT_Analysis/
+│   └── HSCT single-cell RNA-seq analysis workflows
+│
+├── environments/
+│   └── Reproducibility files for Python and R environments
+│
+└── README.md
+```
+
+---
 
 ## Data Availability
-* **CITE-seq Data:** Raw and processed files are available at GEO under accession [GSE318250](https://www.ncbi.nlm.nih.gov/geo/).
-* **Methylation Data:** Raw .idat and processed matrix files are available at GEO under accession [GSE318251](https://www.ncbi.nlm.nih.gov/geo/).
 
-## Folder Structure
-* `Processing/`: Scripts for initial processing of raw .idat files (R) and generating CITE-seq count matrices (Python).
-* `Analysis/`: 
-    * `CITEseq_clustering.ipynb`: Dimensionality reduction, clustering, and annotation.
-    * `Methylation_RnBeads.R`: Differential methylation analysis.
-* `Figures/`: Code to reproduce specific figure panels (e.g., Figure 2, Figure S5).
-* `Processed_Data/`: Completely processed mudata and RnBeadSets used in the article
-* `Envs/`: Contains the `environment.yml` and `sessionInfo.txt` files for reproducibility.
+### CITE-seq Dataset
 
-## Computational Requirements
+Raw and processed CITE-seq data are available through GEO:
 
-### 1. Python (CITE-seq Analysis)
-Analysis was performed using **Python v3.12.7**. 
-Key libraries used include:
-* **Scanpy** v1.11.5
-* **Muon** v0.1.6
-* **Decoupler** v1.8.0
-* **Leidenalg** v0.10.2
-* **Matplotlib** v3.10.0
-* **Seaborn** v0.13.2
+**GSE318250**
 
-*To reproduce the exact environment, please refer to `Envs/environment.yml`.*
+### DNA Methylation Dataset
 
-### 2. R (Methylation Analysis)
-Analysis was performed using **R v4.4.0**.
-Key libraries used include:
-* **RnBeads** (BioConductor)
-* **ggplot2**
+Raw IDAT files and processed methylation data are available through GEO:
 
-**Note on Visualization:** While statistical processing of methylation data was performed in R using RnBeads, final figure aesthetic adjustments and plots were generated using **GraphPad Prism** using the exported processed tables found in the `Output/` folder.
+**GSE318251**
+
+### Additional Datasets
+
+Additional sequencing datasets associated with this study will be deposited upon publication and accession numbers will be added here.
+
+---
+
+## Analysis Overview
+
+### 1. CITE-seq Analysis
+
+Directory:
+
+```text
+01_CITEseq_Analysis/
+```
+
+This section contains workflows for:
+
+- Single-cell transcriptomic processing
+- Antibody-derived tag (ADT) analysis
+- Quality control
+- Dimensionality reduction
+- Clustering
+- NK cell developmental trajectory analysis
+- Differential gene expression analysis
+
+Primary software:
+
+- Python
+- Scanpy
+- Muon
+- Decoupler
+
+---
+
+### 2. DNA Methylation Analysis
+
+Directory:
+
+```text
+02_Methylation/
+```
+
+Contains scripts used for:
+
+- RnBeads preprocessing
+- Quality control
+- Differential methylation analysis
+- KIR promoter methylation analysis
+- Gene-level and promoter-level methylation analyses
+- Generation of processed tables used for downstream statistical analyses and figure preparation
+
+Primary software:
+
+- R
+- Bioconductor
+- RnBeads
+- ggplot2
+
+---
+
+### 3. Bulk RNA-seq Analysis
+
+Directory:
+
+```text
+03_BulkRNAseq/
+```
+
+Contains workflows used for:
+
+- Read processing
+- Differential expression analysis
+- Pathway enrichment analysis
+- Visualization of transcriptomic changes during NK cell development
+
+---
+
+### 4. HSCT scRNA-seq Analysis
+
+Directory:
+
+```text
+04_scRNAseq_HSCT_Analysis/
+```
+
+Contains workflows used to analyze:
+
+- Single-cell RNA sequencing datasets from HSCT samples
+- NK cell subset identification
+- Developmental state annotation
+- Comparative analyses across clinical samples
+
+---
+
+## Computational Environment
+
+### Python Environment
+
+The Python environment used for single-cell analyses can be recreated with:
+
+```bash
+conda env create -f environments/environment.yml
+conda activate <environment_name>
+```
+
+Major packages include:
+
+- Python 3.12
+- Scanpy
+- Muon
+- Decoupler
+- Leidenalg
+- Matplotlib
+- Seaborn
+
+---
+
+### R Environment
+
+The R environment can be reconstructed using:
+
+```r
+renv::restore()
+```
+
+from the repository root directory after downloading:
+
+```text
+environments/renv.lock
+```
+
+Major packages include:
+
+- R 4.4
+- RnBeads
+- Bioconductor packages
+- tidyverse
+- ggplot2
+
+---
+
+## Figure Reproducibility
+
+Analysis scripts are organized by experiment type rather than by figure number.
+
+Where possible, script names indicate the specific figure panel or analysis represented in the manuscript. Intermediate processed files generated by these scripts were used to create final publication figures.
+
+Certain final visual formatting steps were performed in GraphPad Prism using exported statistical results and processed data tables.
+
+---
+
+## Reproducibility Notes
+
+This repository is intended to fully document the computational analyses performed in the manuscript.
+
+To maximize reproducibility:
+
+1. Create the Python environment from `environment.yml`.
+2. Restore the R environment from `renv.lock`.
+3. Download associated datasets from GEO.
+4. Execute workflows in the relevant analysis directories.
+
+---
 
 ## Citation
 
-If you used this data or code, please cite this work as:
+If you use code from this repository, please cite:
 
-> **Ruesch, M.A., et al. (2026).** IL-15 Signaling During a Critical NK Cell Developmental Window Subverts Maturation and KIR Acquisition. *[Under Review]*.
+> Ruesch MA, et al. *IL-15 Signaling During a Critical NK Cell Developmental Window Subverts Maturation and KIR Acquisition*. 2026.
 
-If you use the code provided in this repository, please also reference the repository URL:
-> https://github.com/FreudLab/NK-Methylation-Development
+and reference the repository:
 
-## Code Environments
-To replicate the Python environment used for the CITE-seq analysis:
-
-```bash
-conda env create -f Envs/environment.yml
-conda activate NK_Dev_2026
+```text
+https://github.com/FreudLab/Ruesch_et_al_2026
 ```
 
-To reproduce the exact R environment used for the methylation analysis:
+---
 
-1. Install [renv](https://rstudio.github.io/renv/articles/renv.html).
-2. Download the `renv.lock` file from this repository.
-3. Run the following in R:
-   ```R
-   renv::restore()
+## Contact
+
+For questions regarding the analyses, code, or datasets, please open a GitHub issue or contact the corresponding authors listed in the manuscript.
