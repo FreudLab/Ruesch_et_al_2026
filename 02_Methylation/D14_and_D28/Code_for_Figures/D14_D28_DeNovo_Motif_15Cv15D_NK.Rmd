@@ -1,0 +1,264 @@
+---
+title: "DeNovo_Motifs_DiffMeth"
+author: "Michael Ruesch"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Designate the library path within the the rnbeads_2.24.0 conda environment
+```{r}
+.libPaths("/users/PAS1800/ruesch6/mambaforge/envs/rnbeads_2.24.0/lib/R/library")
+```
+
+Load Packages
+```{r include=FALSE}
+library(RnBeads)
+library(RnBeads.hg38)
+library(ggrepel)
+library(dplyr)
+library(tidyr)
+library(tibble)
+```
+
+Load in RnBeads Set and Confirm Phenotype of Samples
+Add in CellType value in phenotype to help with analysis
+```{r}
+NK_RnB <- load.rnb.set("~/DNAmethylation/RnBeads_Output/NKDI_and_IV_RnBeadsSet/reports/rnbSet_preprocessed")
+phenotype <- pheno(NK_RnB)
+phenotype$CellType <- c(rep("15D_D14", 2), 
+                        rep("15C_D14", 2), 
+                        rep(c("15D_CD16Neg", "15D_CD16Pos"),2),
+                        rep(c("15C_CD16Neg", "15C_CD16Pos"), 2),
+                        rep("15C_D14", 2),
+                        rep(c("15D_CD16Neg", "15D_CD16Pos"),2),
+                        "15C_CD16Neg", "15C_CD16Pos", "15C_CD16Neg",
+                        rep("S1",4), 
+                        rep("S2A", 4),
+                        rep("S2B", 4),
+                        rep("S3",4), 
+                        rep("S4A", 4),
+                        rep("S4B", 4),
+                        rep("S5", 3)
+)
+slot(NK_RnB, "pheno") <- phenotype
+```
+
+Subset on just the CD15C and 15D CD16- NK cells from day 28
+Also doing CD16+ NK Cells as well
+As well as the Day14 NK cells from each condition
+```{r}
+# Find indices to remove
+remove_idx <- which(!pheno(NK_RnB)$CellType %in% c("15D_CD16Neg", "15C_CD16Neg"))
+# Remove them
+NK_RnB_subset <- remove.samples(NK_RnB, remove_idx)
+# Check
+table(pheno(NK_RnB_subset)$CellType)
+#RunDiffMeth on just the CD15C and 15D CD16- NK Cells
+#CD16Neg_diffMeth <- rnb.execute.computeDiffMeth(NK_RnB_subset, 
+#                                        pheno.cols = "CellType", 
+#                                        pheno.cols.all.pairwise = T)
+
+# Find indices to remove
+remove_idx <- which(!pheno(NK_RnB)$CellType %in% c("15D_CD16Pos", "15C_CD16Pos"))
+# Remove them
+NK_RnB_subset2 <- remove.samples(NK_RnB, remove_idx)
+# Check
+table(pheno(NK_RnB_subset2)$CellType)
+#RunDiffMeth on just the CD15C and 15D CD16- NK Cells
+#CD16Pos_diffMeth <- rnb.execute.computeDiffMeth(NK_RnB_subset2, 
+#                                        pheno.cols = "CellType", 
+#                                        pheno.cols.all.pairwise = T)
+
+# Find indices to remove
+remove_idx <- which(!pheno(NK_RnB)$CellType %in% c("15D_D14", "15C_D14"))
+# Remove them
+NK_RnB_subset3 <- remove.samples(NK_RnB, remove_idx)
+# Check
+table(pheno(NK_RnB_subset3)$CellType)
+#RunDiffMeth on just the CD15C and 15D CD16- NK Cells
+D14_diffMeth <- rnb.execute.computeDiffMeth(NK_RnB_subset3, 
+                                        pheno.cols = "CellType", 
+                                        pheno.cols.all.pairwise = T)
+
+#Save RnBeads DiffMeth Files
+#save.rnb.diffmeth(CD16Neg_diffMeth, "~/DNAmethylation/NKDI_NK_IV_Analysis/De_Novo_Motifs_Homer/CD16Neg_diffMeth")
+CD16Neg_diffMeth <- load.rnb.diffmeth("~/DNAmethylation/NKDI_NK_IV_Analysis/De_Novo_Motifs_Homer/CD16Neg_diffMeth")
+#save.rnb.diffmeth(CD16Pos_diffMeth, "~/DNAmethylation/NKDI_NK_IV_Analysis/De_Novo_Motifs_Homer/CD16Pos_diffMeth")
+CD16Pos_diffMeth <- load.rnb.diffmeth("~/DNAmethylation/NKDI_NK_IV_Analysis/De_Novo_Motifs_Homer/CD16Pos_diffMeth")
+#save.rnb.diffmeth(D14_diffMeth, "~/DNAmethylation/NKDI_NK_IV_Analysis/De_Novo_Motifs_Homer/D14_diffMeth")
+D14_diffMeth <- load.rnb.diffmeth("~/DNAmethylation/NKDI_NK_IV_Analysis/De_Novo_Motifs_Homer/D14_diffMeth")
+```
+
+Find the hypo and hyper methylated probes for each comparison
+```{r}
+#Start with CD16- NK cells
+s.groups <- rnb.sample.groups(NK_RnB_subset,"CellType")[[1]] #Pull comparison group
+dmt.sites <- computeDiffTab.extended.site(meth(NK_RnB_subset),s.groups[[1]],s.groups[[2]], paired = T) #Compute differential methylation in this condition for each probe
+meth_CD16Neg <- meth(NK_RnB_subset, type = "sites", row.names = TRUE) #Get the beta values for the CD16- NK 
+rownames(dmt.sites) <- rownames(meth_CD16Neg) #Apply the probe rownames to the 
+pref_probes <- read.csv("~/DNAmethylation/NKDI_NK_IV_Analysis/805KAnnotation.csv") #Call in preferred probes for EPIC v1 based on Oakes lab filtering
+filtered_dmt <- dmt.sites[rownames(dmt.sites) %in% pref_probes$IlmnID, ] #filter on only the preferred probes
+filtered_dmt <- filtered_dmt[complete.cases(filtered_dmt), ] #remove any NA values
+hyper_probes <- rownames(filtered_dmt[filtered_dmt$mean.diff > 0.2, ]) #Comparison is 15C vs 15D so 15C Beta minus 15D Beta
+hypo_probes <- rownames(filtered_dmt[filtered_dmt$mean.diff < -0.2, ])
+probe_anno <- annotation(NK_RnB_subset, type = "sites", add.names = T) #Call the annotation information for each probe from RnBeads
+CD16Neg_hyper <- probe_anno[rownames(probe_anno) %in% hyper_probes, ] #Filter on just the hyper methylated probes
+CD16Neg_hypo <- probe_anno[rownames(probe_anno) %in% hypo_probes, ] #Filter on just the hypo methylated probes
+
+#Next with CD16+ NK cells
+s.groups <- rnb.sample.groups(NK_RnB_subset2,"CellType")[[1]] #Pull comparison group
+dmt.sites <- computeDiffTab.extended.site(meth(NK_RnB_subset2),s.groups[[1]],s.groups[[2]], paired = F) #Compute differential methylation in this condition for each probe
+meth_CD16Pos <- meth(NK_RnB_subset2, type = "sites", row.names = TRUE) #Get the beta values for the CD16- NK 
+rownames(dmt.sites) <- rownames(meth_CD16Pos) #Apply the probe rownames to the 
+filtered_dmt <- dmt.sites[rownames(dmt.sites) %in% pref_probes$IlmnID, ] #filter on only the preferred probes
+filtered_dmt <- filtered_dmt[complete.cases(filtered_dmt), ] #remove any NA values
+hyper_probes <- rownames(filtered_dmt[filtered_dmt$mean.diff > 0.2, ]) #Comparison is 15C vs 15D so 15C Beta minus 15D Beta
+hypo_probes <- rownames(filtered_dmt[filtered_dmt$mean.diff < -0.2, ])
+probe_anno_2 <- annotation(NK_RnB_subset2, type = "sites", add.names = T) #Call the annotation information for each probe from RnBeads
+CD16Pos_hyper <- probe_anno_2[rownames(probe_anno_2) %in% hyper_probes, ] #Filter on just the hyper methylated probes
+CD16Pos_hypo <- probe_anno_2[rownames(probe_anno_2) %in% hypo_probes, ] #Filter on just the hypo methylated probes
+
+#Now for the Day14 cells
+s.groups <- rnb.sample.groups(NK_RnB_subset3,"CellType")[[1]] #Pull comparison group
+dmt.sites <- computeDiffTab.extended.site(meth(NK_RnB_subset3),s.groups[[1]],s.groups[[2]], paired = F) #Compute differential methylation in this condition for each probe
+meth_D14 <- meth(NK_RnB_subset3, type = "sites", row.names = TRUE) #Get the beta values for the CD16- NK 
+rownames(dmt.sites) <- rownames(meth_D14) #Apply the probe rownames to the 
+filtered_dmt <- dmt.sites[rownames(dmt.sites) %in% pref_probes$IlmnID, ] #filter on only the preferred probes
+filtered_dmt <- filtered_dmt[complete.cases(filtered_dmt), ] #remove any NA values
+hyper_probes <- rownames(filtered_dmt[filtered_dmt$mean.diff > 0.2, ]) #Comparison is 15C vs 15D so 15C Beta minus 15D Beta
+hypo_probes <- rownames(filtered_dmt[filtered_dmt$mean.diff < -0.2, ])
+probe_anno_3 <- annotation(NK_RnB_subset3, type = "sites", add.names = T) #Call the annotation information for each probe from RnBeads
+D14_hyper <- probe_anno_3[rownames(probe_anno_3) %in% hyper_probes, ] #Filter on just the hyper methylated probes
+D14_hypo <- probe_anno_3[rownames(probe_anno_3) %in% hypo_probes, ] #Filter on just the hypo methylated probes
+
+```
+
+Function to write each foreground and background for de novo motif discovery through homer
+using the findMotifsGenome.pl function through homer
+```{r}
+## ------------------------------
+## Inputs
+## ------------------------------
+# All EPIC probes you tested
+all_df <- probe_anno_2  
+
+# Foreground sets you want to process
+foregrounds <- list(
+  D14_hyper     = D14_hyper,
+  D14_hypo      = D14_hypo,
+  CD16Neg_hyper = CD16Neg_hyper,
+  CD16Neg_hypo  = CD16Neg_hypo,
+  CD16Pos_hyper = CD16Pos_hyper,
+  CD16Pos_hypo  = CD16Pos_hypo
+)
+
+## ------------------------------
+## Helper functions
+## ------------------------------
+
+# Fix column names (in case of spaces)
+rename_if_exists <- function(df, from, to) {
+  if (from %in% colnames(df)) colnames(df)[colnames(df) == from] <- to
+  df
+}
+
+make_windows <- function(df, flank = 100) {
+  center <- floor((df$Start + df$End) / 2)
+  ws <- center - flank
+  we <- center + flank
+  data.frame(
+    Chromosome = df$Chromosome,
+    Start0     = pmax(0L, as.integer(ws) - 1L),
+    End1       = as.integer(we),
+    Name       = df$ID,
+    Score      = 0,
+    Strand     = df$Strand,
+    GC         = as.numeric(df$GC),
+    CGI        = ifelse(is.na(df$CGI_Relation), "Unknown", df$CGI_Relation),
+    stringsAsFactors = FALSE
+  )
+}
+
+build_background <- function(fg_win, all_win, N_per = 10) {
+  # Exclude fg probes
+  pool <- subset(all_win, !(Name %in% fg_win$Name))
+  
+  # Bin by GC deciles
+  gc_breaks <- quantile(pool$GC, probs = seq(0, 1, 0.1), na.rm = TRUE)
+  pool$GCbin <- cut(pool$GC, breaks = gc_breaks, include.lowest = TRUE)
+  fg_win$GCbin <- cut(fg_win$GC, breaks = gc_breaks, include.lowest = TRUE)
+  
+  pool$bin <- paste(pool$CGI, pool$GCbin, sep="|")
+  fg_win$bin <- paste(fg_win$CGI, fg_win$GCbin, sep="|")
+  
+  sample_bin <- function(bin_label, need_n, pool_df) {
+    cand <- which(pool_df$bin == bin_label)
+    if (length(cand) >= need_n) {
+      sample(cand, need_n, replace = FALSE)
+    } else if (length(cand) > 0) {
+      sample(cand, need_n, replace = TRUE)
+    } else {
+      # broaden to CGI only
+      cgi <- strsplit(bin_label, "\\|")[[1]][1]
+      cand2 <- which(pool_df$CGI == cgi)
+      if (length(cand2) >= need_n) {
+        sample(cand2, need_n, replace = FALSE)
+      } else if (length(cand2) > 0) {
+        sample(cand2, need_n, replace = TRUE)
+      } else {
+        sample(seq_len(nrow(pool_df)), need_n, replace = FALSE)
+      }
+    }
+  }
+  
+  tab_fg <- table(fg_win$bin)
+  idx_list <- integer(0)
+  set.seed(42)
+  for (b in names(tab_fg)) {
+    need <- as.integer(tab_fg[[b]] * N_per)
+    idx_list <- c(idx_list, sample_bin(b, need, pool))
+  }
+  
+  bg_win <- pool[idx_list, , drop = FALSE]
+  bg_win <- bg_win[!duplicated(bg_win[,c("Chromosome","Start0","End1","Name")]), ]
+  list(fg_win = fg_win, bg_win = bg_win)
+}
+
+## ------------------------------
+## Pre-clean full annotation
+## ------------------------------
+all_df <- rename_if_exists(all_df, "CGI Relation", "CGI_Relation")
+keep_chr <- paste0("chr", c(1:22, "X", "Y"))
+all_df <- subset(all_df, Chromosome %in% keep_chr & !is.na(Start) & !is.na(End))
+all_win <- make_windows(all_df)
+
+## ------------------------------
+## Loop through foregrounds
+## ------------------------------
+for (nm in names(foregrounds)) {
+  fg_df <- rename_if_exists(foregrounds[[nm]], "CGI Relation", "CGI_Relation")
+  fg_df <- subset(fg_df, Chromosome %in% keep_chr & !is.na(Start) & !is.na(End))
+  fg_win <- make_windows(fg_df)
+  
+  res <- build_background(fg_win, all_win, N_per = 10)
+  
+  # Write out to files
+  write.table(res$fg_win[,c("Chromosome","Start0","End1")],
+              file = paste0("fg_", nm, ".txt"),
+              sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
+  
+  write.table(res$bg_win[,c("Chromosome","Start0","End1")],
+              file = paste0("bg_", nm, ".txt"),
+              sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
+  
+  cat("Wrote", nm, "foreground:", nrow(res$fg_win),
+      "background:", nrow(res$bg_win), "\n")
+}
+
+```
+
+
