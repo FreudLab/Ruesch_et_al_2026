@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH --account=PAS2527
+#SBATCH --time=4:00:00
+#SBATCH --mail-type=ALL
+#SBATCH --ntasks-per-node=40
+#SBATCH --partition=nextgen
+#SBATCH --output=AML_and_Rapamycin_InVitro.slurm-%j.out
+
+# Load the mamba module for managing python packages
+export PATH="$HOME/mambaforge/bin:$PATH"
+source activate rnbeads_2.24.0
+
+# Define temporary directory
+TMP_DATA_DIR=$TMPDIR/AML_and_Rapa
+mkdir -p $TMP_DATA_DIR
+
+# Copy data to $TMPDIR
+cp -r $HOME/DNAmethylation/raw_data/AML_and_Rapa/* $TMP_DATA_DIR
+
+# Run the R script
+Rscript $HOME/DNAmethylation/raw_data/AML_and_Rapa/SLURM_Scripts/AML_and_Rapa.R $TMP_DATA_DIR
+
+# Copy results back to the home directory
+cp -r $TMP_DATA_DIR/RnBeads_Output $HOME/DNAmethylation/RnBeads_Output
