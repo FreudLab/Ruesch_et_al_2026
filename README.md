@@ -159,7 +159,7 @@ Contains workflows used to analyze:
 The Python environment used for single-cell analyses can be recreated with:
 
 ```bash
-conda env create -f environments/environment.yml
+conda env create -f environments/python_env.yml
 conda activate <environment_name>
 ```
 
