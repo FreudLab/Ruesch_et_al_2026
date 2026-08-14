@@ -215,7 +215,7 @@ This repository is intended to fully document the computational analyses perform
 
 To maximize reproducibility:
 
-1. Create the Python environment from `environment.yml`.
+1. Create the Python environment from `python_env.yml`.
 2. Restore the R environment from `renv.lock`.
 3. Download associated datasets from GEO.
 4. Execute workflows in the relevant analysis directories.
